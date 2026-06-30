@@ -2,6 +2,7 @@ import { GOOGLE_CLIENT_ID, GOOGLE_SCOPE } from './config';
 import {
   IS_COWORK, driveSearch, driveDownload, driveCreate,
   decodeBase64Utf8, initTokenClient, requestAccessToken,
+  requestAccessTokenSilent, wasAuthorized,
 } from './core/drive';
 import { setData, getData, getState, setState } from './core/state';
 import {
@@ -212,6 +213,20 @@ async function loadData(): Promise<void> {
   (document.getElementById('error-detail') as HTMLElement).textContent = '';
 
   if (!IS_COWORK && !window.__saludGisToken) {
+    // Si el usuario ya autorizó antes, intentar renovación silenciosa primero.
+    // GIS llamará al callback (onSuccess) o al error_callback (onError).
+    if (wasAuthorized()) {
+      initTokenClient(
+        GOOGLE_CLIENT_ID, GOOGLE_SCOPE,
+        () => { void loadData(); },           // renovó OK → reintenta loadData
+        () => {                                // falló → muestra login
+          document.getElementById('loading-screen')!.style.display = 'none';
+          document.getElementById('login-screen')!.style.display = 'flex';
+        },
+      );
+      requestAccessTokenSilent();
+      return; // espera el callback — no continuar con el render
+    }
     document.getElementById('loading-screen')!.style.display = 'none';
     document.getElementById('login-screen')!.style.display = 'flex';
     return;
@@ -272,10 +287,13 @@ function iniciarLogin(): void {
       'Falta GOOGLE_CLIENT_ID en config.ts.';
     return;
   }
-  initTokenClient(GOOGLE_CLIENT_ID, GOOGLE_SCOPE, () => {
-    document.getElementById('login-screen')!.style.display = 'none';
-    void loadData();
-  });
+  initTokenClient(
+    GOOGLE_CLIENT_ID, GOOGLE_SCOPE,
+    () => {
+      document.getElementById('login-screen')!.style.display = 'none';
+      void loadData();
+    },
+  );
   requestAccessToken();
 }
 

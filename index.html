@@ -361,8 +361,12 @@ const TOOL_SEARCH = 'mcp__c567b4dc-1137-4713-a583-962d9f2d1ad4__search_files';
 const TOOL_DOWNLOAD = 'mcp__c567b4dc-1137-4713-a583-962d9f2d1ad4__download_file_content';
 const TOOL_CREATE = 'mcp__c567b4dc-1137-4713-a583-962d9f2d1ad4__create_file';
 
-let gisToken = null;          // token OAuth en memoria (no se persiste)
+let gisToken = null;
 let gisTokenClient = null;
+const GIS_AUTHORIZED_KEY = 'salud-gis-authorized';
+
+function wasAuthorized() { try { return localStorage.getItem(GIS_AUTHORIZED_KEY) === '1'; } catch { return false; } }
+function markAuthorized() { try { localStorage.setItem(GIS_AUTHORIZED_KEY, '1'); } catch {} }
 
 function unwrapMcp(result) {
   if (!result) throw new Error('La tool MCP no devolvió respuesta');
@@ -374,7 +378,7 @@ function unwrapMcp(result) {
 
 /* ---- OAuth (solo navegador) ---- */
 function gisReady() { return typeof google !== 'undefined' && google.accounts && google.accounts.oauth2; }
-function initTokenClient() {
+function initTokenClient(onSuccess, onError) {
   if (gisTokenClient || !gisReady()) return;
   gisTokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
@@ -382,19 +386,22 @@ function initTokenClient() {
     callback: (resp) => {
       if (resp && resp.access_token) {
         gisToken = resp.access_token;
-        document.getElementById('login-screen').style.display = 'none';
-        loadData();
+        markAuthorized();
+        onSuccess && onSuccess();
       } else {
-        document.getElementById('login-detail').textContent = 'No se obtuvo token. Reintenta.';
+        onError && onError();
       }
-    }
+    },
+    error_callback: () => { onError && onError(); },
   });
 }
 function iniciarLogin() {
   if (!GOOGLE_CLIENT_ID) { document.getElementById('login-detail').textContent = 'Falta GOOGLE_CLIENT_ID en index.html (ver docs/SETUP.md).'; return; }
   if (!gisReady()) { document.getElementById('login-detail').textContent = 'Google Identity aún cargando, espera un segundo y reintenta.'; return; }
-  initTokenClient();
-  gisTokenClient.requestAccessToken({ prompt: gisToken ? '' : 'consent' });
+  initTokenClient(
+    () => { document.getElementById('login-screen').style.display = 'none'; loadData(); },
+  );
+  gisTokenClient.requestAccessToken({ prompt: 'consent' });
 }
 async function driveFetch(url, options) {
   if (!gisToken) throw new Error('Sin sesión de Google. Inicia sesión.');
@@ -636,8 +643,19 @@ async function loadData() {
   document.getElementById('tabs').style.display = 'none';
   document.getElementById('content').style.display = 'none';
   document.getElementById('error-detail').textContent = '';
-  // En navegador, si no hay token todavía, muestra login.
+  // En navegador, si no hay token todavía intenta renovación silenciosa.
   if (!IS_COWORK && !gisToken) {
+    if (wasAuthorized()) {
+      initTokenClient(
+        () => loadData(),   // renovó OK — reintenta
+        () => {             // falló — muestra login
+          document.getElementById('loading-screen').style.display = 'none';
+          document.getElementById('login-screen').style.display = 'flex';
+        },
+      );
+      if (gisTokenClient) gisTokenClient.requestAccessToken({ prompt: '' });
+      return;
+    }
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
     return;
