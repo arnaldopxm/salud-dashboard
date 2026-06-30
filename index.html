@@ -379,6 +379,15 @@ function unwrapMcp(result) {
 
 /* ---- OAuth (solo navegador) ---- */
 function gisReady() { return typeof google !== 'undefined' && google.accounts && google.accounts.oauth2; }
+
+/** Espera hasta que GIS esté listo y llama fn(). Si no llega en 3 s, llama onTimeout(). */
+function waitForGis(fn, onTimeout, attempt) {
+  attempt = attempt || 0;
+  if (gisReady()) { fn(); return; }
+  if (attempt >= 15) { onTimeout && onTimeout(); return; }
+  setTimeout(function() { waitForGis(fn, onTimeout, attempt + 1); }, 200);
+}
+
 function initTokenClient(onSuccess, onError) {
   if (gisTokenClient || !gisReady()) return;
   gisTokenClient = google.accounts.oauth2.initTokenClient({
@@ -658,14 +667,22 @@ async function loadData() {
   // En navegador, si no hay token todavía intenta renovación silenciosa.
   if (!IS_COWORK && !gisToken) {
     if (wasAuthorized()) {
-      initTokenClient(
-        () => loadData(),   // renovó OK — reintenta
-        () => {             // falló — muestra login
+      waitForGis(
+        function() {
+          initTokenClient(
+            function() { loadData(); },   // renovó OK — reintenta
+            function() {                  // falló — muestra login
+              document.getElementById('loading-screen').style.display = 'none';
+              document.getElementById('login-screen').style.display = 'flex';
+            },
+          );
+          if (gisTokenClient) gisTokenClient.requestAccessToken({ prompt: '' });
+        },
+        function() { // GIS no cargó en 3 s — muestra login igualmente
           document.getElementById('loading-screen').style.display = 'none';
           document.getElementById('login-screen').style.display = 'flex';
-        },
+        }
       );
-      if (gisTokenClient) gisTokenClient.requestAccessToken({ prompt: '' });
       return;
     }
     document.getElementById('loading-screen').style.display = 'none';
