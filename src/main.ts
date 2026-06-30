@@ -2,7 +2,7 @@ import { GOOGLE_CLIENT_ID, GOOGLE_SCOPE } from './config';
 import {
   IS_COWORK, driveSearch, driveDownload, driveCreate,
   decodeBase64Utf8, initTokenClient, requestAccessToken,
-  requestAccessTokenSilent, wasAuthorized,
+  requestAccessTokenSilent, wasAuthorized, revokeAuthorization,
 } from './core/drive';
 import { setData, getData, getState, setState } from './core/state';
 import {
@@ -259,6 +259,7 @@ async function loadData(): Promise<void> {
 declare global {
   interface Window {
     __saludGisToken?: string;
+    cerrarSesion: () => void;
     // Funciones expuestas globalmente para los onclick residuales en index.html
     iniciarLogin: () => void;
     loadData: () => Promise<void>;
@@ -344,6 +345,11 @@ function boot(): void {
 
   // Expone funciones globales necesarias para onclick residuales en el HTML
   window.iniciarLogin = iniciarLogin;
+  window.cerrarSesion = () => {
+    if (!confirm('¿Cerrar sesión?')) return;
+    revokeAuthorization();
+    location.reload();
+  };
   window.loadData = loadData;
   window.activateTab = (tab) => activateTab(tab, handleRehabActivate);
   window.onSemanaChange = (val) => onSemanaChange(parseInt(val));

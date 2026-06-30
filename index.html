@@ -241,7 +241,8 @@
   .ej-reg-input.esfuerzo { width: 130px; }
   .ej-reg-done { font-size: 0.66rem; color: var(--accent-green); font-weight: 700; margin-left: auto; }
   .ej-reg-toggle { font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.7rem; border-radius: 99px; cursor: pointer; border: 1px solid rgba(76,175,138,0.4); background: rgba(76,175,138,0.08); color: var(--accent-green); }
-  .env-pill { position: fixed; bottom: 8px; right: 8px; font-size: 0.6rem; padding: 0.15rem 0.5rem; border-radius: 99px; background: var(--card); border: 1px solid var(--border); color: var(--text-secondary); z-index: 50; opacity: 0.7; }
+  .env-pill { position: fixed; bottom: 8px; right: 8px; font-size: 0.6rem; padding: 0.15rem 0.5rem; border-radius: 99px; background: var(--card); border: 1px solid var(--border); color: var(--text-secondary); z-index: 50; opacity: 0.7; cursor: pointer; user-select: none; }
+  .env-pill:hover { opacity: 1; border-color: var(--accent-red); color: var(--accent-red); }
 </style>
 </head>
 <body>
@@ -339,7 +340,7 @@
     </div>
   </div>
 </div>
-<div class="env-pill" id="env-pill"></div>
+<div class="env-pill" id="env-pill" title="Cerrar sesión" onclick="cerrarSesion()"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* =====================================================================
@@ -402,6 +403,17 @@ function iniciarLogin() {
     () => { document.getElementById('login-screen').style.display = 'none'; loadData(); },
   );
   gisTokenClient.requestAccessToken({ prompt: 'consent' });
+}
+function cerrarSesion() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  const tokenToRevoke = gisToken;
+  gisToken = null;
+  gisTokenClient = null;
+  try { localStorage.removeItem(GIS_AUTHORIZED_KEY); } catch {}
+  if (gisReady() && tokenToRevoke) {
+    try { google.accounts.oauth2.revoke(tokenToRevoke, () => {}); } catch {}
+  }
+  location.reload();
 }
 async function driveFetch(url, options) {
   if (!gisToken) throw new Error('Sin sesión de Google. Inicia sesión.');
