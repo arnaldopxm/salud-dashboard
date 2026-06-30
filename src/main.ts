@@ -1,4 +1,4 @@
-import { GOOGLE_CLIENT_ID, GOOGLE_SCOPE } from './config';
+import { GOOGLE_CLIENT_ID, GOOGLE_SCOPE, FEATURE_PRELOAD_LOG } from './config';
 import {
   IS_COWORK, driveSearch, driveDownload, driveCreate,
   decodeBase64Utf8, initTokenClient, requestAccessToken,
@@ -241,7 +241,7 @@ async function loadData(): Promise<void> {
     const dl = await driveDownload(file.id);
     if (!dl.content) throw new Error('download no devolvió campo content');
     setData(JSON.parse(decodeBase64Utf8(dl.content)));
-    await cargarLogDelDia();
+    if (FEATURE_PRELOAD_LOG) await cargarLogDelDia();
     renderAll();
   } catch (e) {
     console.error('[salud] loadData failed:', e);

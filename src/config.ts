@@ -4,3 +4,6 @@ export const GOOGLE_CLIENT_ID =
 export const GOOGLE_SCOPE =
   'https://www.googleapis.com/auth/drive.file ' +
   'https://www.googleapis.com/auth/drive.readonly';
+
+// Feature flags — poner a true para activar, false para desactivar sin perder código
+export const FEATURE_PRELOAD_LOG = false; // hidratación del log del día al arrancar
