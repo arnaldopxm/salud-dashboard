@@ -45,7 +45,7 @@ export async function loadRehabSession(): Promise<void> {
     `<div class="loading-inline"><span class="mini-spinner"></span> Buscando sesión en 02-rutinas…</div>`;
 
   try {
-    const searchData = await driveSearch("title contains 'sesion' and mimeType contains 'markdown'");
+    const searchData = await driveSearch("name contains 'sesion' and mimeType = 'text/plain'");
     const archivos = filtrarArchivosSession(searchData.files ?? []);
 
     if (archivos.length === 0) {

@@ -62,6 +62,11 @@ export function getGisToken(): string | null {
   return gisToken;
 }
 
+/** Solo para tests. No llamar en código de producción. */
+export function _setTokenForTesting(token: string | null): void {
+  gisToken = token;
+}
+
 function gisReady(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -136,7 +141,7 @@ export async function driveSearch(queryDrive: string): Promise<DriveSearchResult
     encodeURIComponent(queryDrive) +
     '&fields=' +
     encodeURIComponent('files(id,name,modifiedTime,webViewLink)') +
-    '&pageSize=100&orderBy=modifiedTime desc';
+    '&pageSize=100&orderBy=modifiedTime+desc';
   const r = await driveFetch(url);
   const data = await r.json() as { files?: Array<{ id: string; name: string; modifiedTime?: string; webViewLink?: string }> };
   const files: DriveFile[] = (data.files ?? []).map(f => {

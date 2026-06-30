@@ -75,7 +75,7 @@ async function guardarDiaEnDrive(): Promise<void> {
 
 async function resolverCarpetaLog(): Promise<string> {
   try {
-    const d = await driveSearch("title = 'log' and mimeType = 'application/vnd.google-apps.folder'");
+    const d = await driveSearch("name = 'log' and mimeType = 'application/vnd.google-apps.folder'");
     const f = (d.files ?? []).find(x => x.id === LOG_FOLDER_ID) ?? d.files?.[0];
     return f ? f.id : LOG_FOLDER_ID;
   } catch { return LOG_FOLDER_ID; }
@@ -194,7 +194,7 @@ async function loadData(): Promise<void> {
   }
 
   try {
-    const searchData = await driveSearch("title = 'rutina-salud.json'");
+    const searchData = await driveSearch("name = 'rutina-salud.json'");
     if (!searchData.files?.length) throw new Error('Archivo rutina-salud.json no encontrado en Drive');
     const file = searchData.files.slice().sort((a, b) =>
       (b.modifiedTime ?? '').localeCompare(a.modifiedTime ?? ''),
