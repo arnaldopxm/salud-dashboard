@@ -1,0 +1,15 @@
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Nada de secretos en el repo (el Client ID de OAuth NO es secreto y va en index.html,
+# pero por si acaso ignoramos archivos de entorno locales).
+.env
+.env.local
+*.local
