@@ -160,13 +160,14 @@ describe('driveSearch (browser mode)', () => {
     const result = await driveSearch("name = 'rutina-salud.json'");
 
     expect(result.files).toHaveLength(1);
-    expect(result.files[0]).toMatchObject({
+    const first = result.files[0]!;
+    expect(first).toMatchObject({
       id: 'abc',
       title: 'rutina-salud.json',
       modifiedTime: '2024-01-01',
     });
     // La propiedad "name" no debe aparecer en el objeto resultado
-    expect((result.files[0] as Record<string, unknown>)['name']).toBeUndefined();
+    expect((first as unknown as Record<string, unknown>)['name']).toBeUndefined();
   });
 
   it('lanza error "Sesión expirada" en 401', async () => {
