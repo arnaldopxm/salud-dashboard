@@ -16,36 +16,41 @@ const ctx = await esbuild.context({
 
 mkdirSync('dist', { recursive: true });
 
-// Archivos estáticos
-copyFileSync('index.html', 'dist/index.html');
-
-// SW con hash del bundle inyectado — invalida la cache en cada deploy
-if (existsSync('sw.js')) {
-  const bundleHash = hashFile('dist/bundle.js');
-  const swContent = injectSwVersion(readFileSync('sw.js', 'utf-8'), bundleHash);
-  writeFileSync('dist/sw.js', swContent, 'utf-8');
-  console.log(`SW cache version: salud-${bundleHash}`);
-}
-
-// Iconos PWA — copia PNGs reales si existen, genera SVGs placeholder si no
-const iconSizes = [192, 512];
-writeIcons(iconSizes, 'icons', 'dist/icons');
-const manifestIcons = resolveManifestIcons(iconSizes, size => existsSync(`icons/icon-${size}.png`));
-
-// Reescribe el manifest con los iconos correctos (SVG o PNG según lo que haya)
-if (existsSync('manifest.json')) {
-  const manifest = injectIconsIntoManifest(
-    JSON.parse(readFileSync('manifest.json', 'utf-8')),
-    manifestIcons,
-  );
-  writeFileSync('dist/manifest.json', JSON.stringify(manifest, null, 2), 'utf-8');
-}
-
 if (watch) {
+  // En modo watch los estáticos se copian una vez y esbuild vigila cambios
+  copyStaticos();
   await ctx.watch();
   console.log('Watching for changes…');
 } else {
+  // Primero genera el bundle, luego usa su hash para el SW
   await ctx.rebuild();
   await ctx.dispose();
+  copyStaticos();
   console.log('Build complete → dist/');
+}
+
+function copyStaticos() {
+  copyFileSync('index.html', 'dist/index.html');
+
+  // SW con hash del bundle inyectado — invalida la cache en cada deploy
+  if (existsSync('sw.js')) {
+    const bundleHash = hashFile('dist/bundle.js');
+    const swContent = injectSwVersion(readFileSync('sw.js', 'utf-8'), bundleHash);
+    writeFileSync('dist/sw.js', swContent, 'utf-8');
+    console.log(`SW cache version: salud-${bundleHash}`);
+  }
+
+  // Iconos PWA — copia PNGs reales si existen, genera SVGs placeholder si no
+  const iconSizes = [192, 512];
+  writeIcons(iconSizes, 'icons', 'dist/icons');
+  const manifestIcons = resolveManifestIcons(iconSizes, size => existsSync(`icons/icon-${size}.png`));
+
+  // Reescribe el manifest con los iconos correctos (SVG o PNG según lo que haya)
+  if (existsSync('manifest.json')) {
+    const manifest = injectIconsIntoManifest(
+      JSON.parse(readFileSync('manifest.json', 'utf-8')),
+      manifestIcons,
+    );
+    writeFileSync('dist/manifest.json', JSON.stringify(manifest, null, 2), 'utf-8');
+  }
 }
