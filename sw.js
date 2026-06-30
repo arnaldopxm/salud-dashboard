@@ -14,7 +14,7 @@ self.addEventListener('install', (event) => {
   // cierren todas las pestañas del SW anterior.
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)).catch(() => {})
   );
 });
 
@@ -33,6 +33,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+
+  // El Cache API solo acepta http/https — ignorar chrome-extension:// y similares.
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
+
   const isNetworkFirst = NETWORK_FIRST_HOSTS.some((host) =>
     url.hostname.endsWith(host)
   );
@@ -49,7 +53,8 @@ self.addEventListener('fetch', (event) => {
           if (
             response.ok &&
             response.type === 'basic' &&
-            event.request.method === 'GET'
+            event.request.method === 'GET' &&
+            url.protocol === 'https:'
           ) {
             const toCache = response.clone();
             caches.open(CACHE_NAME).then((cache) =>
