@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild';
-import { copyFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { mkdirSync, existsSync, writeFileSync, readFileSync, copyFileSync } from 'fs';
+import { generateIconSvg, resolveManifestIcons, injectIconsIntoManifest, writeIcons } from './scripts/build-utils.mjs';
 
 const watch = process.argv.includes('--watch');
 
@@ -18,17 +18,20 @@ mkdirSync('dist', { recursive: true });
 
 // Archivos estáticos
 copyFileSync('index.html', 'dist/index.html');
-if (existsSync('manifest.json')) copyFileSync('manifest.json', 'dist/manifest.json');
 if (existsSync('sw.js')) copyFileSync('sw.js', 'dist/sw.js');
 
-// Iconos PWA
-if (existsSync('icons')) {
-  mkdirSync('dist/icons', { recursive: true });
-  readdirSync('icons').forEach(f => {
-    if (f.endsWith('.png') || f.endsWith('.svg')) {
-      copyFileSync(join('icons', f), join('dist/icons', f));
-    }
-  });
+// Iconos PWA — copia PNGs reales si existen, genera SVGs placeholder si no
+const iconSizes = [192, 512];
+writeIcons(iconSizes, 'icons', 'dist/icons');
+const manifestIcons = resolveManifestIcons(iconSizes, size => existsSync(`icons/icon-${size}.png`));
+
+// Reescribe el manifest con los iconos correctos (SVG o PNG según lo que haya)
+if (existsSync('manifest.json')) {
+  const manifest = injectIconsIntoManifest(
+    JSON.parse(readFileSync('manifest.json', 'utf-8')),
+    manifestIcons,
+  );
+  writeFileSync('dist/manifest.json', JSON.stringify(manifest, null, 2), 'utf-8');
 }
 
 if (watch) {
