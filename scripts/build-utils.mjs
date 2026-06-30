@@ -1,5 +1,6 @@
 import { existsSync, writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs';
 import { join } from 'path';
+import { createHash } from 'crypto';
 
 /**
  * Genera el SVG placeholder para un icono PWA de tamaño dado.
@@ -31,6 +32,23 @@ export function resolveManifestIcons(sizes, hasPng) {
  */
 export function injectIconsIntoManifest(manifest, icons) {
   return { ...manifest, icons };
+}
+
+/**
+ * Calcula un hash SHA-256 corto (8 hex) del contenido de un archivo.
+ * Función pura respecto al contenido — mismos bytes, mismo hash.
+ */
+export function hashFile(filePath) {
+  const content = readFileSync(filePath);
+  return createHash('sha256').update(content).digest('hex').slice(0, 8);
+}
+
+/**
+ * Inyecta la versión de cache en el SW reemplazando el placeholder __CACHE_VERSION__.
+ * Función pura — devuelve el string modificado, no escribe en disco.
+ */
+export function injectSwVersion(swContent, version) {
+  return swContent.replace('__CACHE_VERSION__', version);
 }
 
 /**

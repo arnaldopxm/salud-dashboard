@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild';
 import { mkdirSync, existsSync, writeFileSync, readFileSync, copyFileSync } from 'fs';
-import { generateIconSvg, resolveManifestIcons, injectIconsIntoManifest, writeIcons } from './scripts/build-utils.mjs';
+import { generateIconSvg, resolveManifestIcons, injectIconsIntoManifest, writeIcons, hashFile, injectSwVersion } from './scripts/build-utils.mjs';
 
 const watch = process.argv.includes('--watch');
 
@@ -18,7 +18,14 @@ mkdirSync('dist', { recursive: true });
 
 // Archivos estáticos
 copyFileSync('index.html', 'dist/index.html');
-if (existsSync('sw.js')) copyFileSync('sw.js', 'dist/sw.js');
+
+// SW con hash del bundle inyectado — invalida la cache en cada deploy
+if (existsSync('sw.js')) {
+  const bundleHash = hashFile('dist/bundle.js');
+  const swContent = injectSwVersion(readFileSync('sw.js', 'utf-8'), bundleHash);
+  writeFileSync('dist/sw.js', swContent, 'utf-8');
+  console.log(`SW cache version: salud-${bundleHash}`);
+}
 
 // Iconos PWA — copia PNGs reales si existen, genera SVGs placeholder si no
 const iconSizes = [192, 512];

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 // Importación dinámica del módulo .mjs (ESM puro, sin tipos TS)
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-const { generateIconSvg, resolveManifestIcons, injectIconsIntoManifest } =
+const { generateIconSvg, resolveManifestIcons, injectIconsIntoManifest, hashFile, injectSwVersion } =
   await import('../../../scripts/build-utils.mjs');
 
 // ---------------------------------------------------------------------------
@@ -114,8 +114,101 @@ describe('injectIconsIntoManifest', () => {
 // Regresión: index.html referencia "bundle.js" no "dist/bundle.js"
 // ---------------------------------------------------------------------------
 
-import { readFileSync } from 'fs';
+// ---------------------------------------------------------------------------
+// hashFile
+// ---------------------------------------------------------------------------
+
+import { writeFileSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
+import { createHash } from 'crypto';
+
+describe('hashFile', () => {
+  it('devuelve exactamente 8 caracteres hex', () => {
+    const tmp = join(tmpdir(), `test-hash-${Date.now()}.txt`);
+    writeFileSync(tmp, 'hola mundo', 'utf-8');
+    const h = hashFile(tmp) as string;
+    unlinkSync(tmp);
+    expect(h).toMatch(/^[0-9a-f]{8}$/);
+  });
+
+  it('mismo contenido → mismo hash (determinista)', () => {
+    const tmp1 = join(tmpdir(), `test-hash-a-${Date.now()}.txt`);
+    const tmp2 = join(tmpdir(), `test-hash-b-${Date.now()}.txt`);
+    writeFileSync(tmp1, 'contenido igual', 'utf-8');
+    writeFileSync(tmp2, 'contenido igual', 'utf-8');
+    const h1 = hashFile(tmp1) as string;
+    const h2 = hashFile(tmp2) as string;
+    unlinkSync(tmp1); unlinkSync(tmp2);
+    expect(h1).toBe(h2);
+  });
+
+  it('contenido distinto → hash distinto', () => {
+    const tmp1 = join(tmpdir(), `test-hash-c-${Date.now()}.txt`);
+    const tmp2 = join(tmpdir(), `test-hash-d-${Date.now()}.txt`);
+    writeFileSync(tmp1, 'contenido A', 'utf-8');
+    writeFileSync(tmp2, 'contenido B', 'utf-8');
+    const h1 = hashFile(tmp1) as string;
+    const h2 = hashFile(tmp2) as string;
+    unlinkSync(tmp1); unlinkSync(tmp2);
+    expect(h1).not.toBe(h2);
+  });
+
+  it('coincide con SHA-256 manual de los mismos bytes', () => {
+    const tmp = join(tmpdir(), `test-hash-e-${Date.now()}.txt`);
+    const content = 'verificación manual';
+    writeFileSync(tmp, content, 'utf-8');
+    const expected = createHash('sha256').update(readFileSync(tmp)).digest('hex').slice(0, 8);
+    const actual = hashFile(tmp) as string;
+    unlinkSync(tmp);
+    expect(actual).toBe(expected);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// injectSwVersion
+// ---------------------------------------------------------------------------
+
+describe('injectSwVersion', () => {
+  it('reemplaza __CACHE_VERSION__ con la versión dada', () => {
+    const sw = `const CACHE_NAME = 'salud-__CACHE_VERSION__';`;
+    expect(injectSwVersion(sw, 'abc12345')).toBe(`const CACHE_NAME = 'salud-abc12345';`);
+  });
+
+  it('no modifica el resto del contenido', () => {
+    const sw = `const CACHE_NAME = 'salud-__CACHE_VERSION__';\nconst X = 1;`;
+    const result = injectSwVersion(sw, 'ff001122') as string;
+    expect(result).toContain('const X = 1;');
+  });
+
+  it('el placeholder original no aparece en el resultado', () => {
+    const sw = `const CACHE_NAME = 'salud-__CACHE_VERSION__';`;
+    const result = injectSwVersion(sw, 'deadbeef') as string;
+    expect(result).not.toContain('__CACHE_VERSION__');
+  });
+
+  it('el sw.js fuente contiene el placeholder (si falta, el build no inyecta nada)', () => {
+    const srcDir = join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'), '../../..');
+    const swSource = readFileSync(join(srcDir, 'sw.js'), 'utf-8');
+    expect(swSource).toContain('__CACHE_VERSION__');
+  });
+
+  it('el sw.js generado en dist NO contiene el placeholder', () => {
+    const srcDir = join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'), '../../..');
+    const swDist = readFileSync(join(srcDir, 'dist/sw.js'), 'utf-8');
+    expect(swDist).not.toContain('__CACHE_VERSION__');
+  });
+
+  it('el sw.js generado en dist contiene skipWaiting', () => {
+    const srcDir = join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'), '../../..');
+    const swDist = readFileSync(join(srcDir, 'dist/sw.js'), 'utf-8');
+    expect(swDist).toContain('skipWaiting');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Regresión: index.html asset paths
+// ---------------------------------------------------------------------------
 
 describe('index.html asset paths', () => {
   const srcDir = join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'), '../../..');
