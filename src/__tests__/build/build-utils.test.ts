@@ -192,16 +192,18 @@ describe('injectSwVersion', () => {
     expect(swSource).toContain('__CACHE_VERSION__');
   });
 
-  it('el sw.js generado en dist NO contiene el placeholder', () => {
+  it('sw.js fuente contiene skipWaiting', () => {
     const srcDir = join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'), '../../..');
-    const swDist = readFileSync(join(srcDir, 'dist/sw.js'), 'utf-8');
-    expect(swDist).not.toContain('__CACHE_VERSION__');
+    const swSource = readFileSync(join(srcDir, 'sw.js'), 'utf-8');
+    expect(swSource).toContain('skipWaiting');
   });
 
-  it('el sw.js generado en dist contiene skipWaiting', () => {
+  it('injectSwVersion elimina el placeholder del contenido del sw fuente', () => {
     const srcDir = join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'), '../../..');
-    const swDist = readFileSync(join(srcDir, 'dist/sw.js'), 'utf-8');
-    expect(swDist).toContain('skipWaiting');
+    const swSource = readFileSync(join(srcDir, 'sw.js'), 'utf-8');
+    const result = injectSwVersion(swSource, 'abc12345') as string;
+    expect(result).not.toContain('__CACHE_VERSION__');
+    expect(result).toContain('salud-abc12345');
   });
 });
 
