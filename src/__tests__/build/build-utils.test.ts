@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
 
-// Importación dinámica del módulo .mjs (ESM puro, sin tipos TS)
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+// Importación dinámica del módulo .mjs — tipos en build-utils.d.ts
 const { generateIconSvg, resolveManifestIcons, injectIconsIntoManifest, hashFile, injectSwVersion } =
-  await import('../../../scripts/build-utils.mjs');
+  await import('../../../scripts/build-utils.mjs' as string) as typeof import('../../../scripts/build-utils.d.ts');
 
 // ---------------------------------------------------------------------------
 // generateIconSvg
