@@ -20,27 +20,34 @@ Esto es lo que permite a la web pedirte login y hablar con tu Drive.
 2. Arriba, crea (o elige) un proyecto. Nómbralo p. ej. `salud-dashboard`.
 3. Menú → **APIs y servicios** → **Biblioteca** → busca **Google Drive API** →
    **Habilitar**.
-4. Menú → **APIs y servicios** → **Pantalla de consentimiento de OAuth**:
-   - Tipo de usuario: **Externo** → Crear.
-   - Rellena nombre de la app (`Salud Dashboard`), tu email de soporte y el de
-     contacto. El resto puede ir en blanco.
-   - En **Usuarios de prueba**, añade tu propia cuenta de Google (la del vault).
-     Mientras la app esté en modo *Testing*, solo los usuarios de prueba pueden
-     entrar — que eres tú, así que perfecto.
-   - Guarda. No necesitas publicar la app ni pasar verificación para uso personal.
-5. Menú → **APIs y servicios** → **Credenciales** → **Crear credenciales** →
-   **ID de cliente de OAuth**:
-   - Tipo de aplicación: **Aplicación web**.
+4. Configura la **Google Auth Platform** (antes "Pantalla de consentimiento de
+   OAuth"). Google la presenta ahora como un asistente de 4 pasos. Entra en
+   **APIs y servicios** → **Pantalla de consentimiento de OAuth** (o **Google Auth
+   Platform** → **Overview** → *Create branding*) y completa:
+   - **Paso 1 · App Information** → *App name*: `Salud Dashboard`. *User support
+     email*: tu Gmail. → **Next**.
+   - **Paso 2 · Audience** → elige **External**. → **Next**.
+   - **Paso 3 · Contact Information** → tu email de contacto (el mismo Gmail). →
+     **Next**.
+   - **Paso 4 · Finish** → acepta la política y pulsa **Create**.
+   - **Añadir tu cuenta como tester** (ya NO está en el asistente): en el menú
+     izquierdo ve a **Audience**. Si la app está en modo *Testing*, en **Test
+     users** → **Add users** añade tu propio Gmail (el del vault). Mientras esté
+     en Testing, solo los testers pueden entrar — con que estés tú, basta. No hace
+     falta publicar ni pasar verificación para uso personal.
+5. Menú izquierdo → **Clients** → **Create client** (equivale al antiguo
+   *Credenciales → Crear credenciales → ID de cliente de OAuth*):
+   - Tipo de aplicación: **Web application**.
    - Nombre: `salud-dashboard-web`.
-   - **Orígenes de JavaScript autorizados** → Añadir URI. Pon EXACTAMENTE:
+   - **Authorized JavaScript origins** → *Add URI*. Pon EXACTAMENTE:
      ```
      https://arnaldopxm.github.io
      ```
      (sin barra final, sin la parte `/salud-dashboard`). Si vas a probar en local,
      añade también `http://localhost:8000` o el puerto que uses.
-   - **NO** hace falta rellenar "URIs de redirección autorizados" (el token model
-     de GIS no los usa).
-   - Crear. Copia el **ID de cliente** (algo como
+   - **NO** hace falta rellenar "Authorized redirect URIs" (el token model de GIS
+     no los usa).
+   - **Create**. Copia el **Client ID** (algo como
      `123456789-abc...apps.googleusercontent.com`).
 
 ---

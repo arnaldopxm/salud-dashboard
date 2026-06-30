@@ -1,0 +1,25 @@
+{
+  "name": "salud-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && node build.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "dev": "node build.js --watch"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@vitest/coverage-v8": "^2.1.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Rutina Salud",
+  "short_name": "Salud",
+  "description": "Dashboard personal de salud — rutinas, kegel, rehab y registro diario",
+  "start_url": "/salud-dashboard/",
+  "scope": "/salud-dashboard/",
+  "display": "standalone",
+  "background_color": "#0f0f1a",
+  "theme_color": "#6C8EF5",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

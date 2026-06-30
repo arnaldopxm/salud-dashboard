@@ -2,7 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#6C8EF5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Salud">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Rutina Salud</title>
 <style>
   :root {
@@ -339,7 +346,7 @@
    CONFIG — rellena GOOGLE_CLIENT_ID con tu OAuth Client ID (ver docs/SETUP.md).
    Si lo dejas vacío y NO estás en Cowork, la app pedirá configurarlo.
    ===================================================================== */
-const GOOGLE_CLIENT_ID = '';  // <-- pega aquí tu Client ID de Google Cloud
+const GOOGLE_CLIENT_ID = '572446713017-iiu4soravd38ils75fphh27rr7c7adss.apps.googleusercontent.com';
 const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/drive';
 
 /* =====================================================================
@@ -1709,5 +1716,7 @@ function boot() {
 }
 boot();
 </script>
+<!-- bundle TypeScript — se carga en dist/ (GitHub Pages) -->
+<script src="dist/bundle.js" defer></script>
 </body>
 </html>
