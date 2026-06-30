@@ -52,7 +52,11 @@ function collectTsFiles(dir: string): string[] {
 
 describe('Drive API v3 query syntax', () => {
   const srcDir = join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'), '../../..');
-  const files = collectTsFiles(join(srcDir, 'src'));
+  // Incluye index.html porque contiene el script inline legacy que también hace driveSearch
+  const files = [
+    ...collectTsFiles(join(srcDir, 'src')),
+    join(srcDir, 'index.html'),
+  ];
 
   it('ningún archivo usa "title =" en queries de Drive (debe ser "name =")', () => {
     const violations: string[] = [];

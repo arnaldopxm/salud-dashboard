@@ -412,7 +412,7 @@ async function driveSearch(queryDrive) {
   if (IS_COWORK) { return unwrapMcp(await window.cowork.callMcpTool(TOOL_SEARCH, { query: queryDrive })); }
   const url = 'https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(queryDrive) +
     '&fields=' + encodeURIComponent('files(id,name,modifiedTime,webViewLink)') +
-    '&pageSize=100&orderBy=modifiedTime desc';
+    '&pageSize=100&orderBy=modifiedTime+desc';
   const r = await driveFetch(url);
   const data = await r.json();
   // Normaliza al shape que espera el dashboard: title + viewUrl.
@@ -540,7 +540,7 @@ function construirLogDelDia() {
 // Resuelve el id de la carpeta _data/log/ en runtime (con fallback a la constante).
 async function resolverCarpetaLog() {
   try {
-    const d = await driveSearch("title = 'log' and mimeType = 'application/vnd.google-apps.folder'");
+    const d = await driveSearch("name = 'log' and mimeType = 'application/vnd.google-apps.folder'");
     const f = (d.files || []).find(x => x.id === LOG_FOLDER_ID) || (d.files || [])[0];
     return f ? f.id : LOG_FOLDER_ID;
   } catch (e) { return LOG_FOLDER_ID; }
@@ -643,7 +643,7 @@ async function loadData() {
     return;
   }
   try {
-    const searchData = await driveSearch("title = 'rutina-salud.json'");
+    const searchData = await driveSearch("name = 'rutina-salud.json'");
     if (!searchData.files || searchData.files.length === 0) throw new Error('Archivo rutina-salud.json no encontrado en Drive');
     const file = searchData.files.slice().sort((a, b) => (b.modifiedTime || '').localeCompare(a.modifiedTime || ''))[0];
     const downloadData = await driveDownload(file.id);
@@ -1114,7 +1114,7 @@ async function loadRehabSession() {
   const container = document.getElementById('rehab-content');
   container.innerHTML = `<div class="loading-inline"><span class="mini-spinner"></span> Buscando sesión en 02-rutinas…</div>`;
   try {
-    const searchData = await driveSearch("title contains 'sesion' and mimeType contains 'markdown'");
+    const searchData = await driveSearch("name contains 'sesion' and mimeType = 'text/plain'");
     const datePrefix = /^(\d{8})[-_](\d{4})/;
     const sessionRe  = /^(\d{8})[-_](\d{4})_sesion[-_]/i;
     let files = (searchData.files || []).filter(f => {
