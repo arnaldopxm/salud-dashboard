@@ -77,27 +77,61 @@ function gisReady(): boolean {
   );
 }
 
-export function initTokenClient(clientId: string, scope: string, onSuccess: () => void): void {
+const AUTHORIZED_KEY = 'salud-gis-authorized';
+
+/** Devuelve true si el usuario ya autorizó la app en alguna sesión anterior. */
+export function wasAuthorized(): boolean {
+  try { return localStorage.getItem(AUTHORIZED_KEY) === '1'; } catch { return false; }
+}
+
+function markAuthorized(): void {
+  try { localStorage.setItem(AUTHORIZED_KEY, '1'); } catch {}
+}
+
+export function clearToken(): void {
+  gisToken = null;
+}
+
+export function revokeAuthorization(): void {
+  gisToken = null;
+  try { localStorage.removeItem(AUTHORIZED_KEY); } catch {}
+}
+
+export function initTokenClient(
+  clientId: string,
+  scope: string,
+  onSuccess: () => void,
+  onError?: () => void,
+): void {
   if (gisTokenClient || !gisReady()) return;
   // @ts-expect-error google GIS loaded externally
   gisTokenClient = google.accounts.oauth2.initTokenClient({
     client_id: clientId,
     scope,
-    callback: (resp: { access_token?: string }) => {
+    callback: (resp: { access_token?: string; error?: string }) => {
       if (resp?.access_token) {
         gisToken = resp.access_token;
+        markAuthorized();
         onSuccess();
+      } else {
+        onError?.();
       }
     },
+    error_callback: () => { onError?.(); },
   });
 }
 
-export function requestAccessToken(): void {
-  gisTokenClient?.requestAccessToken({ prompt: gisToken ? '' : 'consent' });
+/**
+ * Intenta renovar el token silenciosamente (sin popup).
+ * Solo funciona si el usuario ya autorizó previamente (wasAuthorized()).
+ * Si Google no tiene sesión activa, el error_callback dispara onError.
+ */
+export function requestAccessTokenSilent(): void {
+  gisTokenClient?.requestAccessToken({ prompt: '' });
 }
 
-export function clearToken(): void {
-  gisToken = null;
+export function requestAccessToken(): void {
+  gisTokenClient?.requestAccessToken({ prompt: 'consent' });
 }
 
 // ---------------------------------------------------------------------------
