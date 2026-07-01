@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild';
-import { copyFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
+import { copyFileSync, mkdirSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 const watch = process.argv.includes('--watch');
@@ -17,7 +17,13 @@ const ctx = await esbuild.context({
 mkdirSync('dist', { recursive: true });
 
 // Archivos estáticos
-copyFileSync('index.html', 'dist/index.html');
+// index.html en la raíz del repo referencia el bundle como "dist/bundle.js"
+// (para servir el repo desde su raíz en dev: `npm run serve`/`preview`). Pero
+// Pages publica el CONTENIDO de dist/ como raíz del sitio, donde el bundle queda
+// en "bundle.js". Reescribimos la ruta al copiar para que ambos layouts funcionen.
+const html = readFileSync('index.html', 'utf8')
+  .replace(/src=(["'])dist\/bundle\.js\1/g, 'src=$1bundle.js$1');
+writeFileSync('dist/index.html', html);
 if (existsSync('manifest.json')) copyFileSync('manifest.json', 'dist/manifest.json');
 if (existsSync('sw.js')) copyFileSync('sw.js', 'dist/sw.js');
 
