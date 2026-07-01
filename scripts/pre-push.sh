@@ -21,12 +21,12 @@ step "Type check"
 npm run typecheck || fail "typecheck falló"
 ok "TypeScript OK"
 
-step "Tests"
-npm test || fail "Tests fallaron"
-ok "Tests OK"
-
 step "Build"
 npm run build || fail "Build falló"
 ok "Build OK"
+
+step "Tests"
+npm test || fail "Tests fallaron"
+ok "Tests OK"
 
 printf "\n${GREEN}Pipeline local completo — push permitido.${NC}\n\n"
