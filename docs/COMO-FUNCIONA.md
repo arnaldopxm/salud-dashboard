@@ -48,13 +48,41 @@ camino según el entorno:
 La detección es `const IS_COWORK = window.cowork && typeof window.cowork.callMcpTool === 'function'`.
 Un mismo `index.html` corre en los dos sitios sin ramas divergentes.
 
+## Dos motores de arranque: inline vs bundle
+
+Ojo, esto es sutil y ha causado bugs. El `index.html` contiene **dos**
+implementaciones del arranque (y de OAuth y de `loadData`), y cuál manda depende
+del entorno:
+
+- **Script inline** (dentro de `<script>` en `index.html`): es el que corre en
+  **Cowork**, donde no hay bundle. Tiene su propio `gisToken`, su `loadData` y su
+  `boot()`.
+- **Bundle TypeScript** (`src/` compilado a `dist/bundle.js`, cargado con `defer`):
+  es el que corre en **navegador**. Tiene *su propio* `gisToken` (en
+  `src/core/drive.ts`), su `loadData` (`src/main.ts`) y su `boot()`. Al arrancar,
+  el bundle sobreescribe `window.iniciarLogin`, `window.loadData`, etc., así que
+  los `onclick` del HTML acaban invocando las funciones del bundle.
+
+En navegador se cargan los dos, pero solo el bundle debe arrancar la app. Por eso
+el `boot()` inline solo llama a `loadData()` **`if (IS_COWORK)`**: si no, ambos
+compiten y la app se cuelga en "Cargando…" (race condition del boot).
+
+> [!warning] El token vive en un sitio por motor — no los cruces
+> Cada motor guarda el access token en SU propio `gisToken`. En el bundle, la
+> **fuente de verdad** es `getGisToken()` de `src/core/drive.ts`. No compruebes la
+> sesión contra ninguna otra variable ni global: hubo un bug en que el bundle
+> comprobaba `window.__saludGisToken` (que nadie asignaba nunca), así que tras un
+> login correcto la app rebotaba al login. Si necesitas saber si hay sesión en el
+> bundle, usa `getGisToken()`.
+
 ## Autenticación (solo navegador)
 
 Se usa **Google Identity Services** (token model, OAuth implícito en cliente).
 Al abrir la app sin sesión, se muestra una pantalla de login. Al pulsar *Entrar
 con Google*, GIS pide un access token con scope `drive`. El token se guarda solo
-**en memoria** (variable `gisToken`), nunca en `localStorage` ni en disco. Si
-caduca (HTTP 401), la app pide volver a entrar.
+**en memoria** (variable `gisToken` — una por motor de arranque, ver arriba),
+nunca en `localStorage` ni en disco. Si caduca (HTTP 401), la app pide volver a
+entrar.
 
 El **Client ID** (constante `GOOGLE_CLIENT_ID` en `index.html`) no es un secreto:
 los OAuth Client ID de tipo Web son públicos por diseño. La seguridad la da la

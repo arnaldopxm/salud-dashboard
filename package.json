@@ -9,7 +9,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "dev": "node build.js --watch"
+    "dev": "node build.js --watch",
+    "serve": "npx serve . -l 8080",
+    "preview": "npm run build && npx serve . -l 8080"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",

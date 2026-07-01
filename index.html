@@ -1712,7 +1712,9 @@ function renderPlan() {
 function boot() {
   const pill = document.getElementById('env-pill');
   if (pill) pill.textContent = IS_COWORK ? 'Cowork' : 'Web';
-  loadData();
+  // En navegador el boot lo hace el bundle TypeScript (bundle.js, defer).
+  // El inline solo arranca en Cowork, donde no hay bundle.
+  if (IS_COWORK) loadData();
 }
 boot();
 </script>
