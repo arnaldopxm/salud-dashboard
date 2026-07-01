@@ -51,7 +51,9 @@ function collectTsFiles(dir: string): string[] {
 }
 
 describe('Drive API v3 query syntax', () => {
-  const srcDir = join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'), '../../..');
+  // La barra inicial de pathname (/c:/…) hay que quitarla en Windows. La unidad puede
+  // venir en mayúscula o minúscula según el shell (PowerShell → C:, Git Bash → c:).
+  const srcDir = join(new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'), '../../..');
   // Incluye index.html porque contiene el script inline legacy que también hace driveSearch
   const files = [
     ...collectTsFiles(join(srcDir, 'src')),
