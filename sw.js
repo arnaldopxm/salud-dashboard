@@ -10,7 +10,9 @@ const NETWORK_FIRST_HOSTS = ['googleapis.com', 'accounts.google.com'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    // Si el precache falla (p. ej. un recurso 404), no bloqueamos el install:
+    // dejar el SW instalado igualmente evita el spinner enganchado.
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)).catch(() => {})
   );
 });
 
@@ -28,6 +30,12 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+
+  // El Cache API solo acepta http/https. Las extensiones del navegador inyectan
+  // requests con scheme chrome-extension:// que reventaban cache.put() con un
+  // TypeError. Los ignoramos para no romper el fetch handler.
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
+
   const isNetworkFirst = NETWORK_FIRST_HOSTS.some((host) =>
     url.hostname.endsWith(host)
   );
@@ -47,7 +55,8 @@ self.addEventListener('fetch', (event) => {
           if (
             response.ok &&
             response.type === 'basic' &&
-            event.request.method === 'GET'
+            event.request.method === 'GET' &&
+            url.protocol === 'https:'
           ) {
             const toCache = response.clone();
             caches.open(CACHE_NAME).then((cache) =>
