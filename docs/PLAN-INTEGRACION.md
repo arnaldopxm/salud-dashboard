@@ -194,12 +194,21 @@ Orden interno: boot-race primero (estabiliza el arranque), luego OAuth.
 - [x] Rama `feat/logout` — 47a44df (encima de silent-refresh). Probar logout + revoke. PR #6.
 - [x] Cada una: PR independiente, probada en local antes de push.
 
-### Fase 3 — Hidratar log (riesgo alto — sospechosa)
-- [ ] main NO cuelga hoy, así que el cuelgue que investigaba newFeatures NO está en
+### Fase 3 — Hidratar log (riesgo alto — sospechosa) ✅ COMPLETADA
+
+Cerrada 2026-07-01 (PR #9 squash `9bd9b05`).
+- [x] main NO cuelga hoy, así que el cuelgue que investigaba newFeatures NO está en
       main. Verificar si era esta feature o la race condition (Fase 2).
-- [ ] Rama `feat/preload-log` — 3cf5021 + poner FEATURE_PRELOAD_LOG=true.
-- [ ] Probar exhaustivo: carga navegador, carga Cowork, log visible al recargar.
-- [ ] Si vuelve a colgar => la feature es la culpable; dejar flag en false y rediseñar.
+      → CONFIRMADO: el cuelgue era la race del boot + la guarda de sesión fantasma
+      (`window.__saludGisToken`), ambas arregladas en Fase 2 (#4). NO era esta feature.
+- [x] Rama `feat/preload-log` — 3cf5021. DECISIÓN: se integró la feature activa directa,
+      SIN reintroducir `FEATURE_PRELOAD_LOG` (ese flag solo fue interruptor de depuración
+      en 8fd10a2; ponerlo en true dejaba código muerto). Tampoco se trajo `build-utils.d.ts`
+      (es tooling de Fase 4). `cargarLogDelDia()` es best-effort en try/catch: un fallo de
+      Drive no bloquea ni cuelga el render.
+- [x] Probar exhaustivo: carga navegador, log visible al recargar. → Verificado por Arnaldo
+      en navegador: carga bien los datos y escribe bien; sin cuelgue. 157 tests verdes.
+- [x] Si vuelve a colgar => la feature es la culpable. → NO volvió a colgar. Feature estable.
 
 ### Fase 4 — Service Worker (lo último)
 - [ ] Rama `fix/sw-chrome-extension` — f9eacfc (ignorar chrome-extension:// en SW).
