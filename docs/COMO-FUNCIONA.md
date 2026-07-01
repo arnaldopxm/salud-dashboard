@@ -88,6 +88,34 @@ El **Client ID** (constante `GOOGLE_CLIENT_ID` en `index.html`) no es un secreto
 los OAuth Client ID de tipo Web son públicos por diseño. La seguridad la da la
 lista de *Authorized JavaScript origins* en Google Cloud — solo los dominios que
 registres pueden usar ese Client ID. Por eso hay que registrar la URL de Pages.
+Para probar en local necesitas también registrar el origen `http://localhost:8080`
+(el puerto que usan `npm run serve` / `npm run preview`).
+
+### Silent refresh: no re-loguear en cada recarga
+
+El token vive solo en memoria, así que al recargar la página se pierde. Para no
+obligar a re-loguear cada vez, al **primer login** se guarda en `localStorage` un
+flag `salud-gis-authorized` (**solo el flag, nunca el token**). Al arrancar, si el
+flag existe, la app intenta una renovación silenciosa: `requestAccessToken({ prompt: '' })`.
+Google devuelve un token nuevo sin popup **si aún tiene sesión activa** y el scope
+ya estaba concedido. Si no la tiene, dispara el `error_callback` de GIS y la app
+cae a la pantalla de login (falla cerrado). No es un bypass de consentimiento: es
+el flujo estándar de renovación de GIS.
+
+### Logout
+
+El **env-pill** de abajo a la derecha ("Web"/"Cowork") es además el botón de
+cerrar sesión (hover rojo, `confirm()` antes de actuar). Al confirmar,
+`cerrarSesion()` / `revokeAuthorization()`:
+
+1. Anula `gisToken` y `gisTokenClient` en memoria.
+2. Borra el flag `salud-gis-authorized` de `localStorage` (impide el silent refresh).
+3. **Revoca el token en Google** con `google.accounts.oauth2.revoke()` — no basta
+   con olvidarlo localmente; se invalida en origen.
+4. Recarga la página → la guarda de sesión da "sin sesión" → login.
+
+Igual que el resto de OAuth, existe en las dos capas: inline (`index.html`, Cowork)
+y bundle (`src/main.ts` + `src/core/drive.ts`, navegador).
 
 ## Flujo de datos
 
