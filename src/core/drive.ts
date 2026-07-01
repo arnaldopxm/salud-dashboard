@@ -93,8 +93,16 @@ export function clearToken(): void {
 }
 
 export function revokeAuthorization(): void {
+  const tokenToRevoke = gisToken;
   gisToken = null;
+  gisTokenClient = null;
   try { localStorage.removeItem(AUTHORIZED_KEY); } catch {}
+  if (tokenToRevoke && gisReady()) {
+    try {
+      // @ts-expect-error google GIS loaded externally
+      google.accounts.oauth2.revoke(tokenToRevoke, () => {});
+    } catch {}
+  }
 }
 
 export function initTokenClient(
