@@ -3,8 +3,8 @@
 # Mismo orden que el CI de main: npm ci → typecheck → test → build (dist/ limpio).
 # Si cualquier paso falla, sale con código ≠ 0 y el push se cancela.
 #
-# El build.js de main NO inyecta hash en el SW ni usa build-utils.mjs (eso llega en
-# Fase 4). Este script refleja el build.js real de main: solo bundle + copia estática.
+# El build.js hashea dist/bundle.js e inyecta el hash en dist/sw.js (Fase 4), para
+# invalidar la cache del SW en cada deploy. Este script refleja el build real de main.
 #
 # Saltarlo puntualmente (WIP): SKIP_PIPELINE=1 git push …
 #   Las guardas de flujo (scripts/pre-push.sh) NO se saltan con esto; corren siempre.

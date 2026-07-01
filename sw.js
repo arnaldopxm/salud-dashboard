@@ -1,14 +1,19 @@
-const CACHE_NAME = 'salud-v1';
+// El sufijo del CACHE_NAME lo reemplaza build.js con el hash del bundle — no
+// editar a mano. Cada deploy genera un nombre de cache único → invalida el viejo.
+const CACHE_NAME = 'salud-__CACHE_VERSION__';
 const PRECACHE_URLS = [
   './',
   './index.html',
-  './dist/bundle.js',
+  './bundle.js',
   './manifest.json',
 ];
 
 const NETWORK_FIRST_HOSTS = ['googleapis.com', 'accounts.google.com'];
 
 self.addEventListener('install', (event) => {
+  // skipWaiting: el SW nuevo toma control inmediatamente sin esperar a que
+  // el usuario cierre todas las pestañas del SW anterior.
+  self.skipWaiting();
   event.waitUntil(
     // Si el precache falla (p. ej. un recurso 404), no bloqueamos el install:
     // dejar el SW instalado igualmente evita el spinner enganchado.
@@ -24,7 +29,7 @@ self.addEventListener('activate', (event) => {
           .filter((key) => key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       )
-    )
+    ).then(() => self.clients.claim())
   );
 });
 
