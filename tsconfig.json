@@ -11,11 +11,10 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "declaration": false,
     "sourceMap": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "scripts/**/*.d.mts"],
   "exclude": ["node_modules", "dist"]
 }
