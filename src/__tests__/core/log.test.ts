@@ -5,10 +5,11 @@ import {
   getLogExtra, setLogExtra,
   getRegistroEj, setRegistroEj,
   construirLogDelDia,
+  hydratarLogDesdeJson,
   LOG_SCHEMA_VERSION,
 } from '../../core/log';
 import type { Storage } from '../../core/log';
-import type { RutinaSalud } from '../../types/schema';
+import type { LogDiario, RutinaSalud } from '../../types/schema';
 
 // ---------------------------------------------------------------------------
 // Storage in-memory para tests
@@ -216,5 +217,123 @@ describe('construirLogDelDia', () => {
     const log = construirLogDelDia(s, DATA, FECHA);
     expect(log.ejercicios).toHaveLength(1);
     expect(log.ejercicios[0]!.ejercicio).toBe('Press');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// hydratarLogDesdeJson
+// ---------------------------------------------------------------------------
+
+const FECHA_H = '2026-06-30';
+
+function makeLog(overrides: Partial<LogDiario> = {}): LogDiario {
+  return {
+    $schema_version: '1.0',
+    fecha: FECHA_H,
+    guardado_ts: '2026-06-30T10:00:00.000Z',
+    checks: {},
+    ejercicios: [],
+    molestias: [],
+    nota_libre: '',
+    ...overrides,
+  };
+}
+
+describe('hydratarLogDesdeJson', () => {
+  it('hidrata checks en storage vacío', () => {
+    const s = makeStorage();
+    const log = makeLog({ checks: { 'agua': true, 'vitamina-d': false } });
+    hydratarLogDesdeJson(s, log);
+    expect(isChecked(s, FECHA_H, 'agua')).toBe(true);
+    expect(isChecked(s, FECHA_H, 'vitamina-d')).toBe(false);
+  });
+
+  it('hidrata ejercicios completados en storage vacío', () => {
+    const s = makeStorage();
+    const log = makeLog({
+      ejercicios: [{
+        patron: 'fuerza-A', ejercicio: 'Sentadilla',
+        completado: true, carga_kg: 60, reps_reales: 8,
+        series_reales: 3, rpe: 7, sustituido_por: null,
+      }],
+    });
+    hydratarLogDesdeJson(s, log);
+    const reg = getRegistroEj(s, FECHA_H, 'fuerza-A', 'Sentadilla');
+    expect(reg).not.toBeNull();
+    expect(reg!.carga_kg).toBe(60);
+    expect(reg!.reps_reales).toBe(8);
+    expect(reg!.completado).toBe(true);
+  });
+
+  it('hidrata molestias y nota en storage vacío', () => {
+    const s = makeStorage();
+    const log = makeLog({
+      molestias: [{ zona: 'rodilla', intensidad: 2, contexto: 'al subir', nota: '' }],
+      nota_libre: 'sesión dura',
+    });
+    hydratarLogDesdeJson(s, log);
+    const extra = getLogExtra(s, FECHA_H);
+    expect(extra.molestias).toHaveLength(1);
+    expect(extra.molestias![0]!.zona).toBe('rodilla');
+    expect(extra.nota_libre).toBe('sesión dura');
+  });
+
+  it('NO sobreescribe checks que ya existen en storage', () => {
+    const s = makeStorage();
+    s.setItem(checkKey(FECHA_H, 'agua'), '1');
+    const log = makeLog({ checks: { 'agua': false } });
+    hydratarLogDesdeJson(s, log);
+    expect(isChecked(s, FECHA_H, 'agua')).toBe(true);
+  });
+
+  it('NO sobreescribe ejercicios si ya hay extra local', () => {
+    const s = makeStorage();
+    setLogExtra(s, FECHA_H, {
+      ejercicios: [{
+        patron: 'fuerza-A', ejercicio: 'Sentadilla',
+        completado: true, carga_kg: 80, reps_reales: 5,
+        series_reales: 3, rpe: 8, sustituido_por: null,
+      }],
+    });
+    const log = makeLog({
+      ejercicios: [{
+        patron: 'fuerza-A', ejercicio: 'Sentadilla',
+        completado: true, carga_kg: 60, reps_reales: 8,
+        series_reales: 3, rpe: 7, sustituido_por: null,
+      }],
+    });
+    hydratarLogDesdeJson(s, log);
+    const reg = getRegistroEj(s, FECHA_H, 'fuerza-A', 'Sentadilla');
+    expect(reg!.carga_kg).toBe(80);
+  });
+
+  it('devuelve true si escribió checks', () => {
+    const s = makeStorage();
+    const log = makeLog({ checks: { 'agua': true } });
+    expect(hydratarLogDesdeJson(s, log)).toBe(true);
+  });
+
+  it('devuelve true si procesó checks aunque sean false', () => {
+    const s = makeStorage();
+    const log = makeLog({ checks: { 'agua': false } });
+    expect(hydratarLogDesdeJson(s, log)).toBe(true);
+  });
+
+  it('devuelve false si el log está completamente vacío', () => {
+    const s = makeStorage();
+    expect(hydratarLogDesdeJson(s, makeLog())).toBe(false);
+  });
+
+  it('ejercicios completados del log son visibles tras hidratar', () => {
+    const s = makeStorage();
+    const log = makeLog({
+      ejercicios: [
+        { patron: 'kegel', ejercicio: 'Kegel básico', completado: true, carga_kg: null, reps_reales: 10, series_reales: 3, rpe: null, sustituido_por: null },
+        { patron: 'pies', ejercicio: 'Intrínseco', completado: true, carga_kg: null, reps_reales: null, series_reales: null, rpe: null, sustituido_por: null },
+      ],
+    });
+    hydratarLogDesdeJson(s, log);
+    expect(getRegistroEj(s, FECHA_H, 'kegel', 'Kegel básico')!.completado).toBe(true);
+    expect(getRegistroEj(s, FECHA_H, 'pies', 'Intrínseco')!.completado).toBe(true);
   });
 });
