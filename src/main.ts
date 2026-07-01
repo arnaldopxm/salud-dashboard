@@ -7,6 +7,7 @@ import {
 import { setData, getData, getState, setState } from './core/state';
 import {
   construirLogDelDia, getLogExtra, setLogExtra, setRegistroEj,
+  hydratarLogDesdeJson,
 } from './core/log';
 import { initTabs, activateTab } from './ui/tabs';
 import { renderHeader, updateProgress } from './ui/header';
@@ -176,6 +177,27 @@ function renderPlan(data: ReturnType<typeof getData>): void {
 }
 
 // ---------------------------------------------------------------------------
+// Hidratación del log del día desde Drive
+// ---------------------------------------------------------------------------
+
+async function cargarLogDelDia(): Promise<void> {
+  const fecha = today();
+  try {
+    const results = await driveSearch(`name = 'salud-log-${fecha}.json'`);
+    const logFile = results.files?.[0];
+    if (!logFile) return; // no hay log guardado hoy — storage vacío es correcto
+
+    const dl = await driveDownload(logFile.id);
+    if (!dl.content) return;
+
+    const log = JSON.parse(decodeBase64Utf8(dl.content)) as import('./types/schema').LogDiario;
+    hydratarLogDesdeJson(storage, log);
+  } catch {
+    // Si falla la carga del log no bloqueamos el render — es best-effort
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Login y carga de datos
 // ---------------------------------------------------------------------------
 
@@ -217,6 +239,7 @@ async function loadData(): Promise<void> {
     const dl = await driveDownload(file.id);
     if (!dl.content) throw new Error('download no devolvió campo content');
     setData(JSON.parse(decodeBase64Utf8(dl.content)));
+    await cargarLogDelDia();
     renderAll();
   } catch (e) {
     console.error('[salud] loadData failed:', e);
