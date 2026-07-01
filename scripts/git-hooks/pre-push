@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# Hook pre-push versionado. Se activa con:  git config core.hooksPath scripts/git-hooks
+# (ver docs/RAMAS.md → "Instalar el hook pre-push"). No es autocontenido: orquesta dos
+# scripts versionados para no duplicar lógica.
+#   1. scripts/pre-push.sh  — guardas de flujo (bloquear main, validar nombre). SIEMPRE.
+#   2. scripts/ci-local.sh  — pipeline de CI en local. Salvo SKIP_PIPELINE=1.
+# git pasa por stdin las refs a empujar (<local ref> <local sha> <remote ref> <remote sha>);
+# hay que capturarlo y reenviárselo a las guardas, que lo consumen.
+
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+PUSH_REFS="$(cat)"
+
+printf '%s' "$PUSH_REFS" | sh "$ROOT/scripts/pre-push.sh" || exit 1
+sh "$ROOT/scripts/ci-local.sh" || exit 1

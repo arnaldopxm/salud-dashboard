@@ -171,11 +171,15 @@ NOTA: lo automatizable es el CUMPLIMIENTO (GitHub + hooks). Que Claude siga la n
 no se automatiza — se logra teniéndola en CLAUDE.md.
 
 ### Fase 1 — Blindar el pipeline (antes de tocar features)
-- [ ] Rama `infra/ci-guard` desde main.
-- [ ] Rescatar hook pre-push + fix orden CI, ADAPTADO al build.js de main
+- [x] Rama `infra/ci-guard` desde main.
+- [x] Rescatar hook pre-push + fix orden CI, ADAPTADO al build.js de main
       (main NO tiene build-utils.mjs ni inyección de hash — el hook debe reflejar
       el build.js real de main, no el de sigueSinFuncionar).
-- [ ] Verificar en local con dist/ limpio que build+test pasan.
+      → Pipeline versionado en `scripts/ci-local.sh`, orden `npm ci → typecheck →
+      test → build` (el del CI de main). Hook versionado en `scripts/git-hooks/pre-push`
+      (activar con `git config core.hooksPath scripts/git-hooks`) que orquesta guardas
+      (`pre-push.sh`, siempre) + pipeline (`ci-local.sh`, salvo `SKIP_PIPELINE=1`).
+- [x] Verificar en local con dist/ limpio que build+test pasan. → 148 tests + build OK.
 - [ ] PR + merge. A partir de aquí, nada se publica sin pipeline verde.
 - NOTA: la inyección de hash en SW NO va aquí. Va en Fase 4 (SW).
 
