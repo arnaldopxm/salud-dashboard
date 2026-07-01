@@ -180,12 +180,12 @@ no se automatiza — se logra teniéndola en CLAUDE.md.
       (activar con `git config core.hooksPath scripts/git-hooks`) que orquesta guardas
       (`pre-push.sh`, siempre) + pipeline (`ci-local.sh`, salvo `SKIP_PIPELINE=1`).
 - [x] Verificar en local con dist/ limpio que build+test pasan. → 148 tests + build OK.
-- [ ] PR + merge. A partir de aquí, nada se publica sin pipeline verde.
+- [x] PR + merge. A partir de aquí, nada se publica sin pipeline verde.
 - NOTA: la inyección de hash en SW NO va aquí. Va en Fase 4 (SW).
 
 ### Fase 2 — Boot + OAuth (bajo/medio riesgo, alto valor)
 Orden interno: boot-race primero (estabiliza el arranque), luego OAuth.
-- [ ] Rama `fix/boot-race` — cherry-pick de827c3. Probar arranque navegador + Cowork.
+- [x] Rama `fix/boot-race` — cherry-pick de827c3. Probar arranque navegador + Cowork.
 - [ ] Rama `feat/oauth-silent-refresh` — a5a5595. Probar: recargar sin re-login.
 - [ ] Rama `feat/logout` — 47a44df (encima de silent-refresh). Probar logout + revoke.
 - [ ] Cada una: PR independiente, probada en local antes de push.
@@ -203,6 +203,12 @@ Orden interno: boot-race primero (estabiliza el arranque), luego OAuth.
       CACHE_VERSION dinámico (tronco común 2c8f2c8 / 56fac75), ADAPTADO a main.
       Esto resuelve el "deploqueo y no veo cambios".
 - [ ] Probar: SW instala sin error, cache se invalida al cambiar el bundle.
+
+### Fase 5 — Next Steps
+- [ ] Error al guardar dia
+- [ ] Al cambiar de ejercicios en Fuerza, en hoy  no se cambian
+- [ ] La pestaña de rehab es innecesaria? Por que no separar fuerza en una pestaña por bloque?
+- [ ] Migrar a BBDD
 
 ## Preguntas abiertas — RESUELTAS
 - lastWorkingVersion se borra? → pendiente de decisión en Fase 0.
