@@ -1,7 +1,7 @@
 import { GOOGLE_CLIENT_ID, GOOGLE_SCOPE } from './config';
 import {
   IS_COWORK, driveSearch, driveDownload, driveCreate,
-  decodeBase64Utf8, initTokenClient, requestAccessToken,
+  decodeBase64Utf8, initTokenClient, requestAccessToken, getGisToken,
 } from './core/drive';
 import { setData, getData, getState, setState } from './core/state';
 import {
@@ -187,7 +187,7 @@ async function loadData(): Promise<void> {
   document.getElementById('content')!.style.display = 'none';
   (document.getElementById('error-detail') as HTMLElement).textContent = '';
 
-  if (!IS_COWORK && !window.__saludGisToken) {
+  if (!IS_COWORK && !getGisToken()) {
     document.getElementById('loading-screen')!.style.display = 'none';
     document.getElementById('login-screen')!.style.display = 'flex';
     return;
@@ -218,7 +218,6 @@ async function loadData(): Promise<void> {
 
 declare global {
   interface Window {
-    __saludGisToken?: string;
     // Funciones expuestas globalmente para los onclick residuales en index.html
     iniciarLogin: () => void;
     loadData: () => Promise<void>;
