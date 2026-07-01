@@ -186,7 +186,7 @@ no se automatiza — se logra teniéndola en CLAUDE.md.
 ### Fase 2 — Boot + OAuth (bajo/medio riesgo, alto valor)
 Orden interno: boot-race primero (estabiliza el arranque), luego OAuth.
 - [x] Rama `fix/boot-race` — cherry-pick de827c3. Probar arranque navegador + Cowork.
-- [ ] Rama `feat/oauth-silent-refresh` — a5a5595. Probar: recargar sin re-login.
+- [x] Rama `feat/oauth-silent-refresh` — a5a5595. Probar: recargar sin re-login.
 - [ ] Rama `feat/logout` — 47a44df (encima de silent-refresh). Probar logout + revoke.
 - [ ] Cada una: PR independiente, probada en local antes de push.
 
