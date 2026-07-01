@@ -55,6 +55,14 @@ GitHub Pages. Detalle completo en `README.md` y `docs/COMO-FUNCIONA.md` — lée
 6. **No degradar.** Tras cualquier cambio, la app debe seguir: cargando el JSON,
    marcando progreso y guardando el log — en navegador Y en Cowork.
 
+## Flujo de ramas y Pull Requests
+
+`main` está protegida: nunca commitees directo a ella, todo cambio entra por PR (una
+rama = una pieza), squash and merge, CI verde + hook pre-push antes de mergear. Las
+reglas duras completas, el nombrado de ramas (`feat|fix|infra|docs|chore|archive/…`),
+el ciclo de vida de una pieza y la autorrevisión mínima viven en **`docs/RAMAS.md`** —
+esa es la fuente de verdad. Léela antes de crear una rama o abrir un PR.
+
 ## Mapa rápido del código (index.html)
 
 - **Config + capa dual** (inicio del `<script>`): `GOOGLE_CLIENT_ID`, `IS_COWORK`,
