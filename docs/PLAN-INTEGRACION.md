@@ -183,12 +183,16 @@ no se automatiza — se logra teniéndola en CLAUDE.md.
 - [x] PR + merge. A partir de aquí, nada se publica sin pipeline verde.
 - NOTA: la inyección de hash en SW NO va aquí. Va en Fase 4 (SW).
 
-### Fase 2 — Boot + OAuth (bajo/medio riesgo, alto valor)
+### Fase 2 — Boot + OAuth (bajo/medio riesgo, alto valor) ✅ COMPLETADA
 Orden interno: boot-race primero (estabiliza el arranque), luego OAuth.
 - [x] Rama `fix/boot-race` — cherry-pick de827c3. Probar arranque navegador + Cowork.
-- [x] Rama `feat/oauth-silent-refresh` — a5a5595. Probar: recargar sin re-login.
-- [ ] Rama `feat/logout` — 47a44df (encima de silent-refresh). Probar logout + revoke.
-- [ ] Cada una: PR independiente, probada en local antes de push.
+      PR #4. EXTRA: destapó y arregló un bug preexistente de la guarda de sesión
+      del bundle (usaba `window.__saludGisToken`, global fantasma → `getGisToken()`).
+      Verificado en navegador. Documentado en `docs/COMO-FUNCIONA.md`.
+- [x] Rama `feat/oauth-silent-refresh` — a5a5595. Probar: recargar sin re-login. PR #5.
+      Verificado en local. Solo persiste flag en localStorage, nunca el token.
+- [x] Rama `feat/logout` — 47a44df (encima de silent-refresh). Probar logout + revoke. PR #6.
+- [x] Cada una: PR independiente, probada en local antes de push.
 
 ### Fase 3 — Hidratar log (riesgo alto — sospechosa)
 - [ ] main NO cuelga hoy, así que el cuelgue que investigaba newFeatures NO está en
