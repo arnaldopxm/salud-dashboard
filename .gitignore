@@ -3,6 +3,11 @@ node_modules/
 dist/
 coverage/
 
+# Desarrollo local: fixtures + mini server para probar la PWA sin login/Drive.
+# No son datos reales ni forman parte del build/deploy.
+dev/
+dev-server.mjs
+
 # Sistema
 .DS_Store
 Thumbs.db
