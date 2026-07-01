@@ -21,7 +21,8 @@ step "Type check"
 npm run typecheck || fail "typecheck falló"
 ok "TypeScript OK"
 
-step "Build"
+step "Build (desde dist/ limpio, como CI)"
+rm -rf dist
 npm run build || fail "Build falló"
 ok "Build OK"
 

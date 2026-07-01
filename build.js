@@ -16,6 +16,14 @@ const ctx = await esbuild.context({
 
 mkdirSync('dist', { recursive: true });
 
+// En modo build hay que generar dist/bundle.js ANTES de hashearlo más abajo.
+// esbuild.context es lazy: sin este rebuild el bundle no existe todavía y
+// hashFile('dist/bundle.js') falla con ENOENT en un dist/ limpio (p.ej. CI).
+// En modo watch el bundle lo produce ctx.watch() al final.
+if (!watch) {
+  await ctx.rebuild();
+}
+
 // Archivos estáticos
 copyFileSync('index.html', 'dist/index.html');
 
@@ -45,7 +53,6 @@ if (watch) {
   await ctx.watch();
   console.log('Watching for changes…');
 } else {
-  await ctx.rebuild();
   await ctx.dispose();
   console.log('Build complete → dist/');
 }
