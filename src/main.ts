@@ -201,6 +201,25 @@ async function cargarLogDelDia(): Promise<void> {
 // Login y carga de datos
 // ---------------------------------------------------------------------------
 
+// Modo local activo si viene ?local en la URL o si la app se sirve bajo una ruta
+// .../local/ (ver dev-server.mjs y docs/MODO-LOCAL.md). La ruta es la única señal
+// que la PWA instalada en iOS conserva de forma fiable: el query se descarta al
+// arrancar desde start_url y el localStorage está particionado entre la pestaña
+// de Safari y la app instalada.
+//
+// Anclado a hostnames de desarrollo: en producción (github.io) nunca se activa,
+// aunque alguien añada ?local a mano. Así el modo local no depende de que dev/
+// no se despliegue — es reducción de superficie (defensa en profundidad).
+function isLocalMode(): boolean {
+  const h = location.hostname;
+  const isDevHost = h === 'localhost' || h === '127.0.0.1'
+    || h.endsWith('.local') || /^192\.168\./.test(h) || /^10\./.test(h)
+    || /^172\.(1[6-9]|2\d|3[01])\./.test(h);
+  if (!isDevHost) return false;
+  return new URLSearchParams(location.search).has('local')
+    || /\/local\/?$/.test(location.pathname);
+}
+
 async function loadData(): Promise<void> {
   document.getElementById('loading-screen')!.style.display = 'flex';
   document.getElementById('login-screen')!.style.display = 'none';
@@ -209,6 +228,25 @@ async function loadData(): Promise<void> {
   document.getElementById('tabs')!.style.display = 'none';
   document.getElementById('content')!.style.display = 'none';
   (document.getElementById('error-detail') as HTMLElement).textContent = '';
+
+  // Modo local de desarrollo (?local): salta login/Drive y carga un fixture
+  // servido junto a la app. Solo para probar layout/estilos en dispositivo.
+  // NO usar en producción — Pages no sirve dev/ y el fixture no lleva datos reales.
+  if (!IS_COWORK && isLocalMode()) {
+    try {
+      const res = await fetch('dev/rutina-salud.sample.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('fixture local no encontrado (dev/rutina-salud.sample.json): ' + res.status);
+      setData(await res.json());
+      renderAll();
+    } catch (e) {
+      console.error('[salud] modo local falló:', e);
+      document.getElementById('loading-screen')!.style.display = 'none';
+      document.getElementById('error-screen')!.style.display = 'flex';
+      (document.getElementById('error-detail') as HTMLElement).textContent =
+        e instanceof Error ? e.message : String(e);
+    }
+    return;
+  }
 
   if (!IS_COWORK && !getGisToken()) {
     // Si el usuario ya autorizó antes, intentar renovación silenciosa primero.
