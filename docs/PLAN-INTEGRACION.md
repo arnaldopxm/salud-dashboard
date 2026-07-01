@@ -8,13 +8,13 @@ valor por piezas pequeñas y verificables sobre `main`, en vez de mergear ramas 
 
 ## Estado de ramas (2026-07-01)
 
-- **main** `51fc4ae` — la ÚNICA versión que funciona. Base de referencia.
-- **sigueSinFuncionar** `15390fa` — fixes de build/CI/hook que NO llegaron a funcionar.
+- **main** `a287ab9` — versión que funciona + protegida (Fase 0). Base de referencia.
+- **archive/infra-wip** `15390fa` — antes `sigueSinFuncionar`. Fixes de build/CI/hook que
+  NO llegaron a funcionar. Archivada; referencia para Fase 1 (se re-implementan adaptados).
 - **newFeatures** `de827c3` — features reales, pero en estado de depuración a medias.
-- **lastWorkingVersion** `2c8f2c8` — nombre engañoso, NO es una versión que funcione.
 
-Todas las ramas están POR DELANTE de main (main no tiene nada que ellas no tengan).
-Ninguna se ha mergeado. main = base más vieja pero única verde.
+`lastWorkingVersion` se borró en Fase 0 (solo tenía el tronco común, nombre engañoso).
+main es la única verde; el valor de las demás se rescata por piezas (Fases 1–4).
 
 ## Tronco común (en las 3 ramas)
 
@@ -134,7 +134,9 @@ local → PR → CI verde → squash and merge → borrar rama.
 Orden acordado: 0 → 1 → 2 (boot-race, silent-refresh, logout) →
 3 (hidratar log) → 4 (SW, lo último, incluye la inyección de hash).
 
-### Fase 0 — Higiene + automatizar el flujo (sin riesgo)
+### Fase 0 — Higiene + automatizar el flujo (sin riesgo) ✅ COMPLETADA
+
+Cerrada 2026-07-01 (PR #1 squash `a287ab9`). Fuente de verdad del flujo: `docs/RAMAS.md`.
 
 Objetivo: que las reglas del flujo (sección "Flujo de trabajo") dejen de depender de
 recordarlas y las haga cumplir la infraestructura. La norma permanente debería vivir
@@ -143,25 +145,27 @@ mueve/duplica allí y activa la automatización en GitHub + hooks.
 
 Limpieza de ramas:
 
-- [ ] Decidir destino de lastWorkingVersion (borrar o renombrar).
-- [ ] Renombrar sigueSinFuncionar a algo descriptivo o marcarla como archivada.
-- [ ] Documentar en el repo qué es cada rama (evitar futura confusión).
+- [x] Decidir destino de lastWorkingVersion (borrar o renombrar). → **borrada** (local+remota).
+- [x] Renombrar sigueSinFuncionar a algo descriptivo o marcarla como archivada. → **`archive/infra-wip`**.
+- [x] Documentar en el repo qué es cada rama (evitar futura confusión). → `docs/RAMAS.md`.
 
 Automatización del flujo (lo que HACE CUMPLIR las reglas, no solo declararlas):
 
-- [ ] Añadir sección "Flujo de ramas y PRs" a CLAUDE.md (norma que Claude lee siempre).
-- [ ] Branch protection en main via GitHub — bloquea push directo, exige PR + CI verde:
-      `gh api -X PUT repos/:owner/:repo/branches/main/protection ...`
-      (require_pull_request_reviews, required_status_checks = job `build`,
-       enforce_admins para forzarte a ti mismo a pasar por PR).
-- [ ] Dejar solo squash como estrategia de merge del repo:
-      `gh api -X PATCH repos/:owner/:repo -f allow_squash_merge=true \
-       -f allow_merge_commit=false -f allow_rebase_merge=false \
-       -f delete_branch_on_merge=true` (borra la rama automáticamente al mergear).
-- [ ] Hook pre-push: validar que el nombre de rama cumple `feat|fix|infra|docs|chore/…`
-      y rechazar push directo a main desde local (defensa en profundidad).
-- [ ] (Opcional) Plantilla de PR en `.github/pull_request_template.md` con la
-      checklist de autorrevisión (capa dual, contrato JSON, XSS, no degradar).
+- [x] Añadir sección "Flujo de ramas y PRs" a CLAUDE.md → remite a `docs/RAMAS.md`.
+- [x] Branch protection en main via GitHub — bloquea push directo, exige PR + CI verde.
+      Aplicado: required_status_checks = job `build` (strict), enforce_admins=true,
+      require PR (0 approvals, trabajo solo), linear history, sin force-push/deletions.
+- [x] Dejar solo squash como estrategia de merge del repo.
+      Aplicado: allow_squash_merge=true, merge_commit=false, rebase_merge=false,
+      delete_branch_on_merge=true.
+- [x] Hook pre-push: validar nombre de rama (`feat|fix|infra|docs|chore|archive/…`)
+      y rechazar push directo a main. En `scripts/pre-push.sh` (versionado), invocado
+      desde `.git/hooks/pre-push` antes del pipeline de CI.
+- [x] Plantilla de PR en `.github/pull_request_template.md` con la checklist de
+      autorrevisión (capa dual, contrato JSON, XSS, no degradar).
+- [x] EXTRA: `deploy.yml` corre el job `build` también en `pull_request` (los pasos de
+      Pages y el `deploy` quedan solo en push a main). Necesario para que el required
+      status check `build` aparezca en los PRs.
 
 NOTA: lo automatizable es el CUMPLIMIENTO (GitHub + hooks). Que Claude siga la norma
 no se automatiza — se logra teniéndola en CLAUDE.md.
