@@ -24,17 +24,42 @@ si cambia una regla, se cambia en este documento (no se duplica el texto en otro
 - `chore/<slug>` — mantenimiento, limpieza, deps
 - `archive/<slug>` — ramas viejas conservadas como referencia, no activas
 
-El hook pre-push (`scripts/pre-push.sh`) rechaza push directo a `main` y valida que el
-nombre de rama cumpla este patrón.
+El hook pre-push rechaza push directo a `main`, valida que el nombre de rama cumpla este
+patrón y corre el pipeline de CI en local antes de dejar pushear (ver más abajo).
+
+## Instalar el hook pre-push
+
+El hook vive versionado en `scripts/git-hooks/pre-push`. Para activarlo en tu clon
+(una sola vez tras clonar):
+
+```sh
+git config core.hooksPath scripts/git-hooks
+```
+
+A partir de ahí, cada `git push` ejecuta:
+
+1. **Guardas de flujo** (`scripts/pre-push.sh`, siempre): bloquea push directo a `main`
+   y valida el nombre de la rama contra el patrón de arriba.
+2. **Pipeline de CI en local** (`scripts/ci-local.sh`): replica el job `build` de
+   `deploy.yml` en el mismo orden — `npm ci → typecheck → test → build` (con `dist/`
+   limpio). Refleja el `build.js` real de main (sin inyección de hash; eso es Fase 4).
+
+Para un push WIP rápido puedes saltar **solo el pipeline** (las guardas nunca se saltan):
+
+```sh
+SKIP_PIPELINE=1 git push …
+```
+
+El CI del PR sigue siendo obligatorio y no se puede saltar: es la barrera dura.
 
 ## Ciclo de vida de una pieza
 
 1. `git switch main && git pull` — partir siempre de main actualizada.
 2. `git switch -c feat/<slug>` — crear la rama.
 3. Desarrollar en commits atómicos (imperativo, uno por mejora — ver CLAUDE.md).
-4. **Probar en local**: `sh scripts/pre-push.sh` (o el hook al pushear) debe pasar
-   — typecheck + build (dist limpio) + tests. Y verificar la app a mano en navegador
-   (y en Cowork si el cambio toca la capa dual).
+4. **Probar en local**: `sh scripts/ci-local.sh` (o el hook al pushear) debe pasar
+   — npm ci + typecheck + tests + build (dist limpio). Y verificar la app a mano en
+   navegador (y en Cowork si el cambio toca la capa dual).
 5. `git push -u origin feat/<slug>` — el hook pre-push corre automáticamente.
 6. Abrir PR contra `main` (`gh pr create`). Descripción: qué, por qué, cómo se probó.
 7. Esperar a que CI (deploy.yml, job `build`) pase en el PR.

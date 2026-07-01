@@ -51,7 +51,8 @@ GitHub Pages. Detalle completo en `README.md` y `docs/COMO-FUNCIONA.md` — lée
 4. **Seguridad primero.** Esta app maneja un token OAuth y construye mucho HTML por
    concatenación. Ante cualquier cambio que toque `innerHTML`, datos externos o el
    token, razona la seguridad explícitamente (OWASP: XSS, inyección).
-5. **Commits atómicos.** Uno por mejora, mensaje claro en imperativo.
+5. **Commits atómicos.** Uno por mejora, mensaje claro en imperativo. No añadas
+   trailers `Co-Authored-By` ni ninguna atribución a Claude/Anthropic en los commits.
 6. **No degradar.** Tras cualquier cambio, la app debe seguir: cargando el JSON,
    marcando progreso y guardando el log — en navegador Y en Cowork.
 
