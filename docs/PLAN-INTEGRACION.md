@@ -210,18 +210,39 @@ Cerrada 2026-07-01 (PR #9 squash `9bd9b05`).
       en navegador: carga bien los datos y escribe bien; sin cuelgue. 157 tests verdes.
 - [x] Si vuelve a colgar => la feature es la culpable. → NO volvió a colgar. Feature estable.
 
-### Fase 4 — Service Worker (lo último)
-- [ ] Rama `fix/sw-chrome-extension` — f9eacfc (ignorar chrome-extension:// en SW).
-- [ ] Invalidación de cache por hash: traer build-utils.mjs + injectSwVersion +
-      CACHE_VERSION dinámico (tronco común 2c8f2c8 / 56fac75), ADAPTADO a main.
-      Esto resuelve el "deploqueo y no veo cambios".
-- [ ] Probar: SW instala sin error, cache se invalida al cambiar el bundle.
+### Fase 4 — Service Worker (lo último) ✅ COMPLETADA
+
+Cerrada 2026-07-01.
+
+- [x] Rama `fix/sw-chrome-extension` — ignorar chrome-extension:// en el SW. PR #11.
+      OJO: el plan citaba `f9eacfc`, pero ese commit resultó ser la lógica de espera
+      de GIS / silent-refresh (ya integrada en Fase 2). El fix real del SW para la
+      arquitectura de main (con `sw.js` como fichero aparte) es `27cccae`, que es la
+      que se portó: guarda de protocolo (`url.protocol` http/https) al inicio del
+      fetch + `.catch()` en el precache del install.
+- [x] Invalidación de cache por hash — `build-utils.mjs` (`hashFile` + `injectSwVersion`,
+      solo esas dos funciones puras; NO se trajeron las de iconos de `56fac75`) +
+      `__CACHE_VERSION__` en sw.js + `skipWaiting`/`clients.claim`, ADAPTADO a main. PR #12.
+      `build.js` genera el bundle ANTES de los estáticos (necesita `dist/bundle.js` en
+      disco para hashearlo). `injectSwVersion` usa `replaceAll` (no solo la primera)
+      para no dejar inyección a medias. Resuelve el "despliego y no veo cambios".
+      EXTRA: destapó un bug latente — el precache apuntaba a `./dist/bundle.js`, pero
+      Pages sirve `dist/` como raíz → 404 en producción. Corregido a `./bundle.js`.
+- [x] EXTRA — PWA no instalable: el manifest declaraba `icon-192/512.png` que NUNCA
+      existieron (solo había un README) → 404 → Chrome rechazaba instalar. PR #13:
+      dos PNG reales (full-bleed #0f0f1a + cruz #6C8EF5, safe-zone maskable) +
+      `scripts/gen-icons.py` (generador reproducible, solo stdlib de Python, sin deps).
+- [x] Probar: SW instala sin error, cache se invalida al cambiar el bundle, PWA
+      instalable. → Verificación manual en el sitio de Pages pendiente por Arnaldo
+      (el efecto solo es observable tras deploy).
 
 ### Fase 5 — Next Steps
-- [ ] Error al guardar dia
-- [ ] Al cambiar de ejercicios en Fuerza, en hoy  no se cambian
+- [ ] PWA styles for ios
 - [ ] La pestaña de rehab es innecesaria? Por que no separar fuerza en una pestaña por bloque?
-- [ ] Migrar a BBDD
+- [ ] Migrar a BBDD - abrir las fichas en la app
+- [ ] Al cambiar de ejercicios en Fuerza, en hoy  no se cambian
+
+
 
 ## Preguntas abiertas — RESUELTAS
 - lastWorkingVersion se borra? → pendiente de decisión en Fase 0.
