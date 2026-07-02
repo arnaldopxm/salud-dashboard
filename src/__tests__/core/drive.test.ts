@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import { decodeBase64Utf8, driveSearch, driveDownload, _setTokenForTesting } from '../../core/drive';
+import {
+  decodeBase64Utf8, driveSearch, driveDownload, _setTokenForTesting,
+  initTokenClient, requestAccessToken, revokeAuthorization,
+} from '../../core/drive';
 
 // ---------------------------------------------------------------------------
 // decodeBase64Utf8
@@ -198,6 +201,79 @@ describe('driveSearch (browser mode)', () => {
     ));
 
     await expect(driveSearch("name = 'test.json'")).rejects.toThrow('Drive API 400');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// initTokenClient — regresión del bug PWA "se queda en login tras loguear"
+//
+// GIS solo permite crear el token client una vez. La app pide token dos veces en
+// la misma carga: renovación silenciosa al arrancar (callbacks A), y si falla,
+// login manual (callbacks B). Si los callbacks se fijaran al crear el cliente, el
+// login manual reutilizaría los callbacks A y su onSuccess nunca correría → PWA
+// pegada en la pantalla de login. Los callbacks deben actualizarse en cada
+// initTokenClient aunque el cliente ya exista.
+// ---------------------------------------------------------------------------
+
+describe('initTokenClient — callbacks se actualizan en cada llamada', () => {
+  let lastCallback: (resp: { access_token?: string }) => void;
+
+  beforeEach(() => {
+    lastCallback = () => {};
+    // gisReady() exige window + google. El entorno de test es 'node' (sin window).
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('localStorage', {
+      getItem: () => null, setItem: () => {}, removeItem: () => {},
+    });
+    vi.stubGlobal('google', {
+      accounts: {
+        oauth2: {
+          initTokenClient: (cfg: { callback: (r: { access_token?: string }) => void }) => {
+            lastCallback = cfg.callback;
+            return { requestAccessToken: () => {} };
+          },
+          revoke: (_t: string, cb: () => void) => cb(),
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    revokeAuthorization(); // resetea cliente y callbacks entre tests
+    vi.unstubAllGlobals();
+    _setTokenForTesting(null);
+  });
+
+  it('el onSuccess del segundo initTokenClient corre, no el del primero', () => {
+    const successA = vi.fn();
+    const successB = vi.fn();
+
+    // 1ª llamada: renovación silenciosa (crea el cliente con callbacks A)
+    expect(initTokenClient('cid', 'scope', successA)).toBe(true);
+
+    // 2ª llamada: login manual (cliente ya existe, debe instalar callbacks B)
+    expect(initTokenClient('cid', 'scope', successB)).toBe(true);
+
+    // GIS responde con token → debe correr B, no A
+    requestAccessToken();
+    lastCallback({ access_token: 'tok-123' });
+
+    expect(successB).toHaveBeenCalledTimes(1);
+    expect(successA).not.toHaveBeenCalled();
+  });
+
+  it('el onError vigente es el de la última llamada', () => {
+    const errorA = vi.fn();
+    const errorB = vi.fn();
+
+    initTokenClient('cid', 'scope', () => {}, errorA);
+    initTokenClient('cid', 'scope', () => {}, errorB);
+
+    // GIS responde sin token → error del último registro
+    lastCallback({});
+
+    expect(errorB).toHaveBeenCalledTimes(1);
+    expect(errorA).not.toHaveBeenCalled();
   });
 });
 

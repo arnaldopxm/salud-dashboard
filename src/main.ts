@@ -347,18 +347,28 @@ declare global {
 }
 
 function iniciarLogin(): void {
+  const detail = document.getElementById('login-detail') as HTMLElement;
   if (!GOOGLE_CLIENT_ID) {
-    (document.getElementById('login-detail') as HTMLElement).textContent =
-      'Falta GOOGLE_CLIENT_ID en config.ts.';
+    detail.textContent = 'Falta GOOGLE_CLIENT_ID en config.ts.';
     return;
   }
-  initTokenClient(
+  // initTokenClient instala los callbacks vigentes aunque el cliente ya lo creara
+  // la renovación silenciosa del arranque (ver drive.ts). Así el onSuccess de aquí
+  // —el que oculta login y carga datos— es el que corre al volver de Google, no el
+  // del arranque (que trae un guard 'settled' y sería un no-op). Ese era el bucle
+  // "completo Google y vuelvo a login" en la PWA.
+  const creado = initTokenClient(
     GOOGLE_CLIENT_ID, GOOGLE_SCOPE,
     () => {
       document.getElementById('login-screen')!.style.display = 'none';
       void loadData();
     },
+    () => { detail.textContent = 'No se pudo iniciar sesión. Reintenta.'; },
   );
+  if (!creado) {
+    detail.textContent = 'Google Identity aún cargando, espera un segundo y reintenta.';
+    return;
+  }
   requestAccessToken();
 }
 

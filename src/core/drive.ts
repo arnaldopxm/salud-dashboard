@@ -57,6 +57,14 @@ const TOOL_CREATE = 'mcp__c567b4dc-1137-4713-a583-962d9f2d1ad4__create_file';
 
 let gisToken: string | null = null;
 let gisTokenClient: { requestAccessToken(opts: { prompt: string }): void } | null = null;
+// Los callbacks se guardan aquí, no se fijan en la creación del cliente. GIS solo
+// deja crear el token client una vez, pero la app tiene dos flujos que piden token
+// en la misma carga (renovación silenciosa al arrancar, luego login manual). Si
+// fijáramos los callbacks al crear, el login manual reutilizaría los de la
+// renovación y su onSuccess nunca correría → se quedaba pegado en la pantalla de
+// login. Guardándolos mutables, cada requestAccessToken usa los callbacks vigentes.
+let onTokenSuccess: (() => void) | null = null;
+let onTokenError: (() => void) | null = null;
 
 export function getGisToken(): string | null {
   return gisToken;
@@ -115,6 +123,8 @@ export function revokeAuthorization(): void {
   const tokenToRevoke = gisToken;
   gisToken = null;
   gisTokenClient = null;
+  onTokenSuccess = null;
+  onTokenError = null;
   try { localStorage.removeItem(AUTHORIZED_KEY); } catch {}
   if (tokenToRevoke && gisReady()) {
     try {
@@ -130,6 +140,9 @@ export function initTokenClient(
   onSuccess: () => void,
   onError?: () => void,
 ): boolean {
+  // Actualiza siempre los callbacks vigentes, exista ya el cliente o no.
+  onTokenSuccess = onSuccess;
+  onTokenError = onError ?? null;
   if (gisTokenClient) return true;
   if (!gisReady()) return false;
   // @ts-expect-error google GIS loaded externally
@@ -140,12 +153,12 @@ export function initTokenClient(
       if (resp?.access_token) {
         gisToken = resp.access_token;
         markAuthorized();
-        onSuccess();
+        onTokenSuccess?.();
       } else {
-        onError?.();
+        onTokenError?.();
       }
     },
-    error_callback: () => { onError?.(); },
+    error_callback: () => { onTokenError?.(); },
   });
   return true;
 }
