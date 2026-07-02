@@ -42,7 +42,8 @@ A partir de ahí, cada `git push` ejecuta:
    y valida el nombre de la rama contra el patrón de arriba.
 2. **Pipeline de CI en local** (`scripts/ci-local.sh`): replica el job `build` de
    `deploy.yml` en el mismo orden — `npm ci → typecheck → test → build` (con `dist/`
-   limpio). Refleja el `build.js` real de main (sin inyección de hash; eso es Fase 4).
+   limpio). Refleja el `build.js` real de main, que inyecta el hash del bundle en el
+   nombre de caché del SW en cada build (Fase 4, ya integrada).
 
 Para un push WIP rápido puedes saltar **solo el pipeline** (las guardas nunca se saltan):
 
