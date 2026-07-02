@@ -67,7 +67,7 @@ export function _setTokenForTesting(token: string | null): void {
   gisToken = token;
 }
 
-function gisReady(): boolean {
+export function gisReady(): boolean {
   return (
     typeof window !== 'undefined' &&
     // @ts-expect-error google GIS loaded externally
@@ -75,6 +75,25 @@ function gisReady(): boolean {
     // @ts-expect-error google GIS loaded externally
     !!google.accounts?.oauth2
   );
+}
+
+/**
+ * Resuelve cuando GIS está cargado, o rechaza tras timeoutMs. El script de GIS
+ * es cross-origin (accounts.google.com) y puede llegar después de que arranque
+ * el bundle — sobre todo al reabrir la PWA en frío, con el HTML/JS servidos ya
+ * desde la caché del SW. Sin esta espera, initTokenClient salía sin crear el
+ * cliente y el arranque se quedaba colgado en "Cargando rutina…".
+ */
+export function whenGisReady(timeoutMs = 8000, stepMs = 100): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (gisReady()) { resolve(); return; }
+    let waited = 0;
+    const id = setInterval(() => {
+      if (gisReady()) { clearInterval(id); resolve(); return; }
+      waited += stepMs;
+      if (waited >= timeoutMs) { clearInterval(id); reject(new Error('GIS no cargó a tiempo')); }
+    }, stepMs);
+  });
 }
 
 const AUTHORIZED_KEY = 'salud-gis-authorized';
@@ -110,8 +129,9 @@ export function initTokenClient(
   scope: string,
   onSuccess: () => void,
   onError?: () => void,
-): void {
-  if (gisTokenClient || !gisReady()) return;
+): boolean {
+  if (gisTokenClient) return true;
+  if (!gisReady()) return false;
   // @ts-expect-error google GIS loaded externally
   gisTokenClient = google.accounts.oauth2.initTokenClient({
     client_id: clientId,
@@ -127,6 +147,7 @@ export function initTokenClient(
     },
     error_callback: () => { onError?.(); },
   });
+  return true;
 }
 
 /**

@@ -2,7 +2,7 @@ import { GOOGLE_CLIENT_ID, GOOGLE_SCOPE } from './config';
 import {
   IS_COWORK, driveSearch, driveDownload, driveCreate,
   decodeBase64Utf8, initTokenClient, requestAccessToken, getGisToken,
-  requestAccessTokenSilent, wasAuthorized, revokeAuthorization,
+  requestAccessTokenSilent, wasAuthorized, revokeAuthorization, whenGisReady,
 } from './core/drive';
 import { setData, getData, getState, setState } from './core/state';
 import {
@@ -249,22 +249,51 @@ async function loadData(): Promise<void> {
   }
 
   if (!IS_COWORK && !getGisToken()) {
+    const mostrarLogin = (): void => {
+      document.getElementById('loading-screen')!.style.display = 'none';
+      document.getElementById('login-screen')!.style.display = 'flex';
+    };
+
     // Si el usuario ya autorizó antes, intentar renovación silenciosa primero.
     // GIS llamará al callback (onSuccess) o al error_callback (onError).
     if (wasAuthorized()) {
-      initTokenClient(
+      // El script de GIS es cross-origin y puede no estar listo aún cuando el
+      // bundle arranca desde la caché del SW (típico al reabrir la PWA en frío).
+      // Esperamos a que cargue; si no llega, caemos a login en vez de colgarnos.
+      try {
+        await whenGisReady();
+      } catch {
+        mostrarLogin();
+        return;
+      }
+
+      // Rescate: si tras la renovación silenciosa no llega ni onSuccess ni
+      // onError (GIS a veces no invoca ningún callback en iOS), no dejamos el
+      // spinner colgado — mostramos login pasado un margen.
+      let settled = false;
+      const rescate = setTimeout(() => {
+        if (!settled) { settled = true; mostrarLogin(); }
+      }, 6000);
+
+      const creado = initTokenClient(
         GOOGLE_CLIENT_ID, GOOGLE_SCOPE,
-        () => { void loadData(); },           // renovó OK → reintenta loadData
+        () => {                                // renovó OK → reintenta loadData
+          if (settled) return;
+          settled = true; clearTimeout(rescate);
+          void loadData();
+        },
         () => {                                // falló → muestra login
-          document.getElementById('loading-screen')!.style.display = 'none';
-          document.getElementById('login-screen')!.style.display = 'flex';
+          if (settled) return;
+          settled = true; clearTimeout(rescate);
+          mostrarLogin();
         },
       );
+      if (!creado) { settled = true; clearTimeout(rescate); mostrarLogin(); return; }
+
       requestAccessTokenSilent();
-      return; // espera el callback — no continuar con el render
+      return; // espera el callback (o el rescate) — no continuar con el render
     }
-    document.getElementById('loading-screen')!.style.display = 'none';
-    document.getElementById('login-screen')!.style.display = 'flex';
+    mostrarLogin();
     return;
   }
 
